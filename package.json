@@ -2,7 +2,8 @@
   "name": "meowith-connector-nodejs",
   "version": "1.0.0",
   "description": "A nodejs connector for meowith",
-  "main": "index.ts",
+  "types": "./lib/src/index.d.ts",
+  "main": "./lib/src/index.js",
   "scripts": {
     "test": "npm run test",
     "build": "npx tsc"
