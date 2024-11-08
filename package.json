@@ -4,12 +4,14 @@
   "description": "A nodejs connector for meowith",
   "main": "index.ts",
   "scripts": {
-    "test": "npm run test"
+    "test": "npm run test",
+    "build": "npx tsc"
   },
   "author": "KsanStone",
   "license": "ISC",
   "dependencies": {
     "@types/node": "^22.9.0",
+    "axios": "^1.7.7",
     "meowith-connector-nodejs": "file:",
     "typescript": "^5.6.3"
   }
