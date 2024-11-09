@@ -1,5 +1,5 @@
 import { MeowithApiAccessor, Resource } from "./api-access";
-import { Entity, FileEntity } from "./entity";
+import { Bucket, Entity, FileEntity, UploadSessionInfo, UploadSessionResumeResponse } from "./entity";
 import { Result } from "./error";
 
 export type MeowithConnectorConfiguration = {
@@ -44,25 +44,24 @@ export class MeowithConnector {
         return { app_id: this.config.appId, bucket_id: this.config.bucketId, path }
     }
 
-    /**
-     * Download the specified resource.
-     * 
-     * @param resource resource location
-     * @returns A fileentity whose content is an axios stream
-     */
     async downloadFile(path: string): Promise<Result<FileEntity>> {
         return this.accessor.downloadFile(this.getResource(path))
     }
 
-    /**
-     * Oneshot upload. If an error occures durint this procedure, the part-file will be auto-deleted.
-     * 
-     * If the provided size of the resource doesn't match the actual size of the payload, the upload will fail.
-     * @param resource resource location
-     * @param size size of the uploaded resource
-     */
     async uploadFile(path: string, data: any, size: number): Promise<Result<undefined>> {
         return this.accessor.uploadFile(this.getResource(path), data, size)
+    }
+
+    async startUploadSession(path: string, size: number): Promise<Result<UploadSessionInfo>> {
+        return this.accessor.startUploadSession(this.getResource(path), size)
+    }
+
+    async putFile(session: UploadSessionInfo, data: any): Promise<Result<undefined>> {
+        return this.accessor.putFile(this.getResource(''), session, data)
+    }
+
+    async resumeUploadSession(session: UploadSessionInfo): Promise<Result<UploadSessionResumeResponse>> {
+        return this.accessor.resumeUploadSession(this.getResource(''), session)
     }
 
     async renameFile(path: string, to: string): Promise<Result<undefined>> {
@@ -86,14 +85,22 @@ export class MeowithConnector {
     }
 
     async listBucketFiles(): Promise<Result<Entity[]>> {
-        return this.accessor.listBucketFiles(this.config.appId, this.config.bucketId)
+        return this.accessor.listBucketFiles(this.getResource(''))
     }
 
     async listBucketDirectories(): Promise<Result<Entity[]>> {
-        return this.accessor.listBucketDirectories(this.config.appId, this.config.bucketId)
+        return this.accessor.listBucketDirectories(this.getResource(''))
     }
 
     async listDirectory(path: string): Promise<Result<Entity[]>> {
         return this.accessor.listDirectory(this.getResource(path))
+    }
+
+    async statResource(path: string): Promise<Result<Entity>> {
+        return this.accessor.statResource(this.getResource(path))
+    }
+
+    async fetchBucketInfo(): Promise<Result<Bucket>> {
+        return this.accessor.fetchBucketInfo(this.getResource(''))
     }
 }

@@ -47,3 +47,38 @@ export type RenameEntityRequest = {
 export type RawEntityList = {
     entities: RawEntity[]
 }
+
+export type RawBucket = {
+    app_id: string,
+    id: string,
+    name: string,
+    encrypted: boolean,
+    atomic_upload: boolean,
+    quota: number,
+    file_count: number,
+    space_taken: number,
+    created: string,
+    last_modified: string,
+}
+
+export type Bucket = Omit<Omit<RawBucket, 'created'>, 'last_modified'> & {
+    created: Date,
+    last_modified: Date
+}
+
+export type UploadSessionInfo = {
+    /**
+     * Upload code
+     */
+    code: String,
+    /**
+     * Session validity in seconds
+     */
+    validity: number,
+    /**
+     * Amount of the file already uploaded to meowith.
+     */
+    uploaded: number,
+}
+
+export type UploadSessionResumeResponse = Omit<Omit<UploadSessionInfo, 'validity'>, 'code'>

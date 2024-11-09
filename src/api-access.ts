@@ -1,8 +1,10 @@
 import axios, { AxiosInstance } from "axios"
-import { FileEntity, RawEntityList, RenameEntityRequest, Entity } from './entity';
+import { FileEntity, RawEntityList, RenameEntityRequest, Entity, RawEntity, Bucket, RawBucket, UploadSessionInfo, UploadSessionResumeResponse } from './entity';
 import { handleError, Result } from "./error";
 
-export type Resource = { app_id: string, bucket_id: string, path: string }
+export type BucketId = { app_id: string, bucket_id: string }
+export type Resource = BucketId & { path: string }
+export type Range = { start: number, end: number } | { start: number } | { end: number };
 
 /**
  * The meowith api accessor. Allows access to the meowith storage node.
@@ -16,15 +18,40 @@ export class MeowithApiAccessor {
         this.axiosInstance.defaults.headers.common.Authorization = `Bearer ${api_token}`
     }
 
+    private constructRangeHeader(range: Range): string {
+        if ('start' in range && 'end' in range) {
+            return `bytes=${range.start}-${range.end}`;
+        } else if ('start' in range) {
+            return `bytes=${range.start}-`;
+        } else if ('end' in range) {
+            return `bytes=-${range.end}`;
+        }
+        throw new Error("Invalid range object");
+    }
+
+    private constructPaginationQuery(range: Range | undefined): string {
+        if ('start' in range && 'end' in range) {
+            return `?start=${range.start}&end=${range.end}`;
+        } else if ('start' in range) {
+            return `?start=${range.start}-`;
+        } else if ('end' in range) {
+            return `?end=${range.end}`;
+        } else {
+            return ""
+        }
+    }
+
     /**
      * Download the specified resource.
      * 
      * @param resource resource location
      * @returns A fileentity whose content is an axios stream
      */
-    async downloadFile(resource: Resource): Promise<Result<FileEntity>> {
+    async downloadFile(resource: Resource, range?: Range): Promise<Result<FileEntity>> {
         try {
-            let response = await this.axiosInstance.get(`/api/file/download/${resource.app_id}/${resource.bucket_id}/${resource.path}`, { responseType: "stream" })
+            let headers = {};
+            if (range) headers['Range'] = this.constructRangeHeader(range)
+            let response = await this.axiosInstance.get(`/api/file/download/${resource.app_id}/${resource.bucket_id}/${resource.path}`, { responseType: "stream", headers })
             return [
                 {
                     size: parseInt(response.headers["Content-Length"] as string),
@@ -53,6 +80,51 @@ export class MeowithApiAccessor {
                 }
             })
             return [undefined, undefined]
+        } catch (e) {
+            return handleError(e)
+        }
+    }
+
+    /**
+     * Starts a durable upload session. This session may be interrupted and resumed at a later date.
+     * @param resource resource locationb
+     * @param size size of the uploaded resource
+     * @returns Session information
+     */
+    async startUploadSession(resource: Resource, size: number): Promise<Result<UploadSessionInfo>> {
+        try {
+            let result = await this.axiosInstance.post(`/api/file/upload/oneshot/${resource.app_id}/${resource.bucket_id}/${resource.path}`, { size })
+            return [result.data as UploadSessionInfo, undefined]
+        } catch (e) {
+            return handleError(e)
+        }
+    }
+
+    /**
+    * 
+    * @param bucket_id bucket identifier
+    * @param session the active upload session
+    */
+    async putFile(bucket_id: BucketId, session: UploadSessionInfo, data: any): Promise<Result<undefined>> {
+        try {
+            await this.axiosInstance.put(`/api/file/upload/put/${bucket_id.app_id}/${bucket_id.bucket_id}/${session.code}`, data)
+            return [undefined, undefined]
+        } catch (e) {
+            return handleError(e)
+        }
+    }
+
+    /**
+     * Resumes an interrupted upload session.
+     * 
+     * @param bucket_id bucket identifier
+     * @param session the active upload session
+     * @returns Resume response containing the already uploaded file size
+     */
+    async resumeUploadSession(bucket_id: BucketId, session: UploadSessionInfo): Promise<Result<UploadSessionResumeResponse>> {
+        try {
+            let result = await this.axiosInstance.post(`/api/file/upload/resume/${bucket_id.app_id}/${bucket_id.bucket_id}`, { session_id: session.code })
+            return [result.data as UploadSessionResumeResponse, undefined]
         } catch (e) {
             return handleError(e)
         }
@@ -103,9 +175,9 @@ export class MeowithApiAccessor {
         }
     }
 
-    async listBucketFiles(app_id: string, bucket_id: string): Promise<Result<Entity[]>> {
+    async listBucketFiles(bucket_id: BucketId, paginate?: Range): Promise<Result<Entity[]>> {
         try {
-            let response = await this.axiosInstance.get(`/api/bucket/list/files/${app_id}/${bucket_id}`)
+            let response = await this.axiosInstance.get(`/api/bucket/list/files/${bucket_id.app_id}/${bucket_id.bucket_id}${this.constructPaginationQuery(paginate)}`)
             let entities = response.data as RawEntityList;
             return [entities.entities.map(x => {
                 return { ...x, last_modified: new Date(x.last_modified), created: new Date(x.created) } as Entity
@@ -115,9 +187,9 @@ export class MeowithApiAccessor {
         }
     }
 
-    async listBucketDirectories(app_id: string, bucket_id: string): Promise<Result<Entity[]>> {
+    async listBucketDirectories(bucket_id: BucketId, paginate?: Range): Promise<Result<Entity[]>> {
         try {
-            let response = await this.axiosInstance.get(`/api/bucket/list/directories/${app_id}/${bucket_id}`)
+            let response = await this.axiosInstance.get(`/api/bucket/list/directories/${bucket_id.app_id}/${bucket_id.bucket_id}${this.constructPaginationQuery(paginate)}`)
             let entities = response.data as RawEntityList;
             return [entities.entities.map(x => {
                 return { ...x, last_modified: new Date(x.last_modified), created: new Date(x.created) } as Entity
@@ -127,9 +199,9 @@ export class MeowithApiAccessor {
         }
     }
 
-    async listDirectory(resource: Resource): Promise<Result<Entity[]>> {
+    async listDirectory(resource: Resource, paginate?: Range): Promise<Result<Entity[]>> {
         try {
-            let response = await this.axiosInstance.get(`/api/directory/list/${resource.app_id}/${resource.bucket_id}/${resource.path}`)
+            let response = await this.axiosInstance.get(`/api/directory/list/${resource.app_id}/${resource.bucket_id}/${resource.path}${this.constructPaginationQuery(paginate)}`)
             let entities = response.data as RawEntityList;
             return [entities.entities.map(x => {
                 return { ...x, last_modified: new Date(x.last_modified), created: new Date(x.created) } as Entity
@@ -139,5 +211,33 @@ export class MeowithApiAccessor {
         }
     }
 
-    // TODO durable upload, list paging
+    /**
+     * Retreives information about the specific resource provided.
+     * @param resource the resource
+     */
+    async statResource(resource: Resource): Promise<Result<Entity>> {
+        try {
+            let response = await this.axiosInstance.get(`/api/bucket/stat/${resource.app_id}/${resource.bucket_id}/${resource.path}`)
+            let entity = response.data as RawEntity;
+            return [{ ...entity, last_modified: new Date(entity.last_modified), created: new Date(entity.created) } as Entity, undefined]
+        } catch (e) {
+            return handleError(e)
+        }
+    }
+
+    /**
+     * Retreives information about the bucket, including the quota and space taken.
+     * @param bucket_id bucket identifier
+     * @returns A bucket entity
+     */
+    async fetchBucketInfo(bucket_id: BucketId): Promise<Result<Bucket>> {
+        try {
+            let response = await this.axiosInstance.get(`/api/bucket/info/${bucket_id.app_id}/${bucket_id.bucket_id}`)
+            let entity = response.data as RawBucket;
+            return [{ ...entity, last_modified: new Date(entity.last_modified), created: new Date(entity.created) } as Bucket, undefined]
+        } catch (e) {
+            return handleError(e)
+        }
+    }
+
 }
