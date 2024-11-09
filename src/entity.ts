@@ -12,7 +12,7 @@ export type FileEntity = {
  * dir and dir_id are uuid's but for the sake of convieniance they'll remain as string's
  */
 export type RawEntity = {
-    name: String,
+    name: string,
     dir: string | undefined,
     dir_id: string | undefined,
     size: number,
@@ -25,7 +25,7 @@ export type RawEntity = {
  * Note: the dir is the uuid of the files directory, which is to be referenced manually.
  */
 export type Entity = {
-    name: String,
+    name: string,
     /**
      * Resource parent directory id, undefined if the resource sits in the root dir.
      */
