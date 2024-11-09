@@ -41,7 +41,7 @@ export class MeowithConnector {
     }
 
     private getResource(path: string): Resource {
-        return { app_id: this.config.appId, bucket_id: this.config.bucketId, path }
+        return { appId: this.config.appId, bucketId: this.config.bucketId, path }
     }
 
     async downloadFile(path: string, range?: Range): Promise<Result<FileEntity>> {

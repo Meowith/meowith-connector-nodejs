@@ -2,20 +2,21 @@ import axios, { AxiosInstance } from "axios"
 import { FileEntity, RawEntityList, RenameEntityRequest, Entity, RawEntity, Bucket, RawBucket, UploadSessionInfo, UploadSessionResumeResponse } from './entity';
 import { handleError, Result } from "./error";
 
-export type BucketId = { app_id: string, bucket_id: string }
+export type BucketId = { appId: string, bucketId: string }
 export type Resource = BucketId & { path: string }
 export type Range = { start: number, end: number } | { start: number } | { end: number };
 
 /**
  * The meowith api accessor. Allows access to the meowith storage node.
+ * This class acts as an api access layer
  */
 export class MeowithApiAccessor {
 
     axiosInstance: AxiosInstance = axios.create();
 
-    constructor(api_token: string, base_url: string) {
-        this.axiosInstance.defaults.baseURL = base_url
-        this.axiosInstance.defaults.headers.common.Authorization = `Bearer ${api_token}`
+    constructor(apiToken: string, baseUrl: string) {
+        this.axiosInstance.defaults.baseURL = baseUrl
+        this.axiosInstance.defaults.headers.common.Authorization = `Bearer ${apiToken}`
     }
 
     private constructRangeHeader(range: Range): string {
@@ -43,19 +44,20 @@ export class MeowithApiAccessor {
 
     /**
      * Download the specified resource.
-     * 
+     *
      * @param resource resource location
-     * @returns A fileentity whose content is an axios stream
+     * @param range byte range to download
+     * @returns A file entity which content is contained in an axios stream
      */
     async downloadFile(resource: Resource, range?: Range): Promise<Result<FileEntity>> {
         try {
             let headers = {};
             if (range) headers['Range'] = this.constructRangeHeader(range)
-            let response = await this.axiosInstance.get(`/api/file/download/${resource.app_id}/${resource.bucket_id}/${resource.path}`, { responseType: "stream", headers })
+            let response = await this.axiosInstance.get(`/api/file/download/${resource.appId}/${resource.bucketId}/${resource.path}`, { responseType: "stream", headers })
             return [
                 {
                     size: parseInt(response.headers["Content-Length"] as string),
-                    name: response.headers["Content-Disposition"].match(/filename="(.+)"/)[1], // parse the attachement filename here plz,
+                    name: response.headers["Content-Disposition"].match(/filename="(.+)"/)[1],
                     mime: response.headers["Content-Type"] as string,
                     content: response.data
                 }, undefined
@@ -66,15 +68,16 @@ export class MeowithApiAccessor {
     }
 
     /**
-     * Oneshot upload. If an error occures durint this procedure, the part-file will be auto-deleted.
-     * 
+     * One shot upload. If an error occurs during this procedure, the part-file will be auto-deleted.
+     *
      * If the provided size of the resource doesn't match the actual size of the payload, the upload will fail.
      * @param resource resource location
+     * @param data additional request configuration
      * @param size size of the uploaded resource
      */
     async uploadFile(resource: Resource, data: any, size: number): Promise<Result<undefined>> {
         try {
-            await this.axiosInstance.post(`/api/file/upload/oneshot/${resource.app_id}/${resource.bucket_id}/${resource.path}`, data, {
+            await this.axiosInstance.post(`/api/file/upload/oneshot/${resource.appId}/${resource.bucketId}/${resource.path}`, data, {
                 headers: {
                     "Content-Length": size
                 }
@@ -86,14 +89,14 @@ export class MeowithApiAccessor {
     }
 
     /**
-     * Starts a durable upload session. This session may be interrupted and resumed at a later date.
-     * @param resource resource locationb
+     * Starts a durable upload session. This session may be interrupted and resumed later.
+     * @param resource resource location
      * @param size size of the uploaded resource
      * @returns Session information
      */
     async startUploadSession(resource: Resource, size: number): Promise<Result<UploadSessionInfo>> {
         try {
-            let result = await this.axiosInstance.post(`/api/file/upload/oneshot/${resource.app_id}/${resource.bucket_id}/${resource.path}`, { size })
+            let result = await this.axiosInstance.post(`/api/file/upload/oneshot/${resource.appId}/${resource.bucketId}/${resource.path}`, { size })
             return [result.data as UploadSessionInfo, undefined]
         } catch (e) {
             return handleError(e)
@@ -101,13 +104,14 @@ export class MeowithApiAccessor {
     }
 
     /**
-    * 
-    * @param bucket_id bucket identifier
-    * @param session the active upload session
-    */
-    async putFile(bucket_id: BucketId, session: UploadSessionInfo, data: any): Promise<Result<undefined>> {
+     * Allows to put file content during a durable upload session
+     * @param bucketId bucket identifier
+     * @param session the active upload session
+     * @param data additional request configuration
+     */
+    async putFile(bucketId: BucketId, session: UploadSessionInfo, data: any): Promise<Result<undefined>> {
         try {
-            await this.axiosInstance.put(`/api/file/upload/put/${bucket_id.app_id}/${bucket_id.bucket_id}/${session.code}`, data)
+            await this.axiosInstance.put(`/api/file/upload/put/${bucketId.appId}/${bucketId.bucketId}/${session.code}`, data)
             return [undefined, undefined]
         } catch (e) {
             return handleError(e)
@@ -116,14 +120,14 @@ export class MeowithApiAccessor {
 
     /**
      * Resumes an interrupted upload session.
-     * 
-     * @param bucket_id bucket identifier
+     *
+     * @param bucketId bucket identifier
      * @param session the active upload session
      * @returns Resume response containing the already uploaded file size
      */
-    async resumeUploadSession(bucket_id: BucketId, session: UploadSessionInfo): Promise<Result<UploadSessionResumeResponse>> {
+    async resumeUploadSession(bucketId: BucketId, session: UploadSessionInfo): Promise<Result<UploadSessionResumeResponse>> {
         try {
-            let result = await this.axiosInstance.post(`/api/file/upload/resume/${bucket_id.app_id}/${bucket_id.bucket_id}`, { session_id: session.code })
+            let result = await this.axiosInstance.post(`/api/file/upload/resume/${bucketId.appId}/${bucketId.bucketId}`, { session_id: session.code })
             return [result.data as UploadSessionResumeResponse, undefined]
         } catch (e) {
             return handleError(e)
@@ -132,7 +136,7 @@ export class MeowithApiAccessor {
 
     async renameFile(resource: Resource, to: string): Promise<Result<undefined>> {
         try {
-            await this.axiosInstance.post(`/api/file/rename/${resource.app_id}/${resource.bucket_id}/${resource.path}`, { to } as RenameEntityRequest)
+            await this.axiosInstance.post(`/api/file/rename/${resource.appId}/${resource.bucketId}/${resource.path}`, { to } as RenameEntityRequest)
             return [undefined, undefined]
         } catch (e) {
             return handleError(e)
@@ -141,7 +145,7 @@ export class MeowithApiAccessor {
 
     async renameDirectory(resource: Resource, to: string): Promise<Result<undefined>> {
         try {
-            await this.axiosInstance.post(`/api/directory/rename/${resource.app_id}/${resource.bucket_id}/${resource.path}`, { to } as RenameEntityRequest)
+            await this.axiosInstance.post(`/api/directory/rename/${resource.appId}/${resource.bucketId}/${resource.path}`, { to } as RenameEntityRequest)
             return [undefined, undefined]
         } catch (e) {
             return handleError(e)
@@ -150,7 +154,7 @@ export class MeowithApiAccessor {
 
     async deleteFile(resource: Resource): Promise<Result<undefined>> {
         try {
-            await this.axiosInstance.delete(`/api/file/delete/${resource.app_id}/${resource.bucket_id}/${resource.path}`)
+            await this.axiosInstance.delete(`/api/file/delete/${resource.appId}/${resource.bucketId}/${resource.path}`)
             return [undefined, undefined]
         } catch (e) {
             return handleError(e)
@@ -159,7 +163,7 @@ export class MeowithApiAccessor {
 
     async deleteDirectory(resource: Resource): Promise<Result<undefined>> {
         try {
-            await this.axiosInstance.delete(`/api/directory/delete/${resource.app_id}/${resource.bucket_id}/${resource.path}`)
+            await this.axiosInstance.delete(`/api/directory/delete/${resource.appId}/${resource.bucketId}/${resource.path}`)
             return [undefined, undefined]
         } catch (e) {
             return handleError(e)
@@ -168,16 +172,16 @@ export class MeowithApiAccessor {
 
     async createDirectory(resource: Resource): Promise<Result<undefined>> {
         try {
-            await this.axiosInstance.post(`/api/directory/create/${resource.app_id}/${resource.bucket_id}/${resource.path}`)
+            await this.axiosInstance.post(`/api/directory/create/${resource.appId}/${resource.bucketId}/${resource.path}`)
             return [undefined, undefined]
         } catch (e) {
             return handleError(e)
         }
     }
 
-    async listBucketFiles(bucket_id: BucketId, paginate?: Range): Promise<Result<Entity[]>> {
+    async listBucketFiles(bucketId: BucketId, paginate?: Range): Promise<Result<Entity[]>> {
         try {
-            let response = await this.axiosInstance.get(`/api/bucket/list/files/${bucket_id.app_id}/${bucket_id.bucket_id}${this.constructPaginationQuery(paginate)}`)
+            let response = await this.axiosInstance.get(`/api/bucket/list/files/${bucketId.appId}/${bucketId.bucketId}${this.constructPaginationQuery(paginate)}`)
             let entities = response.data as RawEntityList;
             return [entities.entities.map(x => {
                 return { ...x, last_modified: new Date(x.last_modified), created: new Date(x.created) } as Entity
@@ -187,9 +191,9 @@ export class MeowithApiAccessor {
         }
     }
 
-    async listBucketDirectories(bucket_id: BucketId, paginate?: Range): Promise<Result<Entity[]>> {
+    async listBucketDirectories(bucketId: BucketId, paginate?: Range): Promise<Result<Entity[]>> {
         try {
-            let response = await this.axiosInstance.get(`/api/bucket/list/directories/${bucket_id.app_id}/${bucket_id.bucket_id}${this.constructPaginationQuery(paginate)}`)
+            let response = await this.axiosInstance.get(`/api/bucket/list/directories/${bucketId.appId}/${bucketId.bucketId}${this.constructPaginationQuery(paginate)}`)
             let entities = response.data as RawEntityList;
             return [entities.entities.map(x => {
                 return { ...x, last_modified: new Date(x.last_modified), created: new Date(x.created) } as Entity
@@ -201,7 +205,7 @@ export class MeowithApiAccessor {
 
     async listDirectory(resource: Resource, paginate?: Range): Promise<Result<Entity[]>> {
         try {
-            let response = await this.axiosInstance.get(`/api/directory/list/${resource.app_id}/${resource.bucket_id}/${resource.path}${this.constructPaginationQuery(paginate)}`)
+            let response = await this.axiosInstance.get(`/api/directory/list/${resource.appId}/${resource.bucketId}/${resource.path}${this.constructPaginationQuery(paginate)}`)
             let entities = response.data as RawEntityList;
             return [entities.entities.map(x => {
                 return { ...x, last_modified: new Date(x.last_modified), created: new Date(x.created) } as Entity
@@ -212,12 +216,12 @@ export class MeowithApiAccessor {
     }
 
     /**
-     * Retreives information about the specific resource provided.
+     * Retrieves information about the specific resource provided.
      * @param resource the resource
      */
     async statResource(resource: Resource): Promise<Result<Entity>> {
         try {
-            let response = await this.axiosInstance.get(`/api/bucket/stat/${resource.app_id}/${resource.bucket_id}/${resource.path}`)
+            let response = await this.axiosInstance.get(`/api/bucket/stat/${resource.appId}/${resource.bucketId}/${resource.path}`)
             let entity = response.data as RawEntity;
             return [{ ...entity, last_modified: new Date(entity.last_modified), created: new Date(entity.created) } as Entity, undefined]
         } catch (e) {
@@ -226,13 +230,13 @@ export class MeowithApiAccessor {
     }
 
     /**
-     * Retreives information about the bucket, including the quota and space taken.
-     * @param bucket_id bucket identifier
+     * Retrieves information about the bucket including space taken and the quota.
+     * @param bucketId bucket identifier
      * @returns A bucket entity
      */
-    async fetchBucketInfo(bucket_id: BucketId): Promise<Result<Bucket>> {
+    async fetchBucketInfo(bucketId: BucketId): Promise<Result<Bucket>> {
         try {
-            let response = await this.axiosInstance.get(`/api/bucket/info/${bucket_id.app_id}/${bucket_id.bucket_id}`)
+            let response = await this.axiosInstance.get(`/api/bucket/info/${bucketId.appId}/${bucketId.bucketId}`)
             let entity = response.data as RawBucket;
             return [{ ...entity, last_modified: new Date(entity.last_modified), created: new Date(entity.created) } as Bucket, undefined]
         } catch (e) {
