@@ -1,4 +1,4 @@
-import { MeowithApiAccessor, Resource } from "./api-access";
+import { MeowithApiAccessor, Range, Resource } from "./api-access";
 import { Bucket, Entity, FileEntity, UploadSessionInfo, UploadSessionResumeResponse } from "./entity";
 import { Result } from "./error";
 
@@ -44,8 +44,8 @@ export class MeowithConnector {
         return { app_id: this.config.appId, bucket_id: this.config.bucketId, path }
     }
 
-    async downloadFile(path: string): Promise<Result<FileEntity>> {
-        return this.accessor.downloadFile(this.getResource(path))
+    async downloadFile(path: string, range?: Range): Promise<Result<FileEntity>> {
+        return this.accessor.downloadFile(this.getResource(path), range)
     }
 
     async uploadFile(path: string, data: any, size: number): Promise<Result<undefined>> {
@@ -84,16 +84,16 @@ export class MeowithConnector {
         return this.accessor.createDirectory(this.getResource(path))
     }
 
-    async listBucketFiles(): Promise<Result<Entity[]>> {
-        return this.accessor.listBucketFiles(this.getResource(''))
+    async listBucketFiles(pagination?: Range): Promise<Result<Entity[]>> {
+        return this.accessor.listBucketFiles(this.getResource(''), pagination)
     }
 
-    async listBucketDirectories(): Promise<Result<Entity[]>> {
-        return this.accessor.listBucketDirectories(this.getResource(''))
+    async listBucketDirectories(pagination?: Range): Promise<Result<Entity[]>> {
+        return this.accessor.listBucketDirectories(this.getResource(''), pagination)
     }
 
-    async listDirectory(path: string): Promise<Result<Entity[]>> {
-        return this.accessor.listDirectory(this.getResource(path))
+    async listDirectory(path: string, pagination?: Range): Promise<Result<Entity[]>> {
+        return this.accessor.listDirectory(this.getResource(path), pagination)
     }
 
     async statResource(path: string): Promise<Result<Entity>> {
