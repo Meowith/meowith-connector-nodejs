@@ -76,8 +76,8 @@ export class MeowithConnector {
         return this.accessor.deleteFile(this.getResource(path))
     }
 
-    async deleteDirectory(path: string): Promise<Result<undefined>> {
-        return this.accessor.deleteDirectory(this.getResource(path))
+    async deleteDirectory(path: string, recursive: boolean): Promise<Result<undefined>> {
+        return this.accessor.deleteDirectory(this.getResource(path), recursive)
     }
 
     async createDirectory(path: string): Promise<Result<undefined>> {

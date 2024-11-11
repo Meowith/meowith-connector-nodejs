@@ -161,9 +161,11 @@ export class MeowithApiAccessor {
         }
     }
 
-    async deleteDirectory(resource: Resource): Promise<Result<undefined>> {
+    async deleteDirectory(resource: Resource, recursive: boolean): Promise<Result<undefined>> {
         try {
-            await this.axiosInstance.delete(`/api/directory/delete/${resource.appId}/${resource.bucketId}/${resource.path}`)
+            await this.axiosInstance.delete(`/api/directory/delete/${resource.appId}/${resource.bucketId}/${resource.path}`, {
+                data: {recursive}
+            })
             return [undefined, undefined]
         } catch (e) {
             return handleError(e)
