@@ -1,6 +1,6 @@
 import { isAxiosError } from "axios"
 
-class ConnectorError extends Error {
+export class ConnectorError extends Error {
     apiError: NodeClientError;
     jsError: Error;
 
