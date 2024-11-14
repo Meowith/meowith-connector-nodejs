@@ -31,7 +31,9 @@ export class MeowithApiAccessor {
     }
 
     private constructPaginationQuery(range: Range | undefined): string {
-        if ('start' in range && 'end' in range) {
+        if (!range) {
+            return ""
+        } else if ('start' in range && 'end' in range) {
             return `?start=${range.start}&end=${range.end}`;
         } else if ('start' in range) {
             return `?start=${range.start}-`;
