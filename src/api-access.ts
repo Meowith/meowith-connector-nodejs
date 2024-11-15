@@ -58,9 +58,9 @@ export class MeowithApiAccessor {
             let response = await this.axiosInstance.get(`/api/file/download/${resource.appId}/${resource.bucketId}/${resource.path}`, { responseType: "stream", headers })
             return [
                 {
-                    size: parseInt(response.headers["Content-Length"] as string),
-                    name: response.headers["Content-Disposition"].match(/filename="(.+)"/)[1],
-                    mime: response.headers["Content-Type"] as string,
+                    size: parseInt(response.headers["x-file-content-length"] as string),
+                    name: response.headers["content-disposition"].match(/filename="(.+)"/)[1],
+                    mime: response.headers["content-type"] as string,
                     content: response.data
                 }, undefined
             ]
