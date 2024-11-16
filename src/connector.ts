@@ -45,62 +45,62 @@ export class MeowithConnector {
     }
 
     async downloadFile(path: string, range?: Range): Promise<Result<FileEntity>> {
-        return this.accessor.downloadFile(this.getResource(path), range)
+        return await this.accessor.downloadFile(this.getResource(path), range)
     }
 
     async uploadFile(path: string, data: any, size: number): Promise<Result<undefined>> {
-        return this.accessor.uploadFile(this.getResource(path), data, size)
+        return await this.accessor.uploadFile(this.getResource(path), data, size)
     }
 
     async startUploadSession(path: string, size: number): Promise<Result<UploadSessionInfo>> {
-        return this.accessor.startUploadSession(this.getResource(path), size)
+        return await this.accessor.startUploadSession(this.getResource(path), size)
     }
 
     async putFile(session: UploadSessionInfo, data: any): Promise<Result<undefined>> {
-        return this.accessor.putFile(this.getResource(''), session, data)
+        return await this.accessor.putFile(this.getResource(''), session, data)
     }
 
     async resumeUploadSession(session: UploadSessionInfo): Promise<Result<UploadSessionResumeResponse>> {
-        return this.accessor.resumeUploadSession(this.getResource(''), session)
+        return await this.accessor.resumeUploadSession(this.getResource(''), session)
     }
 
     async renameFile(path: string, to: string): Promise<Result<undefined>> {
-        return this.accessor.renameFile(this.getResource(path), to)
+        return await this.accessor.renameFile(this.getResource(path), to)
     }
 
     async renameDirectory(path: string, to: string): Promise<Result<undefined>> {
-        return this.accessor.renameDirectory(this.getResource(path), to)
+        return await this.accessor.renameDirectory(this.getResource(path), to)
     }
 
     async deleteFile(path: string): Promise<Result<undefined>> {
-        return this.accessor.deleteFile(this.getResource(path))
+        return await this.accessor.deleteFile(this.getResource(path))
     }
 
     async deleteDirectory(path: string, recursive: boolean): Promise<Result<undefined>> {
-        return this.accessor.deleteDirectory(this.getResource(path), recursive)
+        return await this.accessor.deleteDirectory(this.getResource(path), recursive)
     }
 
     async createDirectory(path: string): Promise<Result<undefined>> {
-        return this.accessor.createDirectory(this.getResource(path))
+        return await this.accessor.createDirectory(this.getResource(path))
     }
 
     async listBucketFiles(pagination?: Range): Promise<Result<Entity[]>> {
-        return this.accessor.listBucketFiles(this.getResource(''), pagination)
+        return await this.accessor.listBucketFiles(this.getResource(''), pagination)
     }
 
     async listBucketDirectories(pagination?: Range): Promise<Result<Entity[]>> {
-        return this.accessor.listBucketDirectories(this.getResource(''), pagination)
+        return await this.accessor.listBucketDirectories(this.getResource(''), pagination)
     }
 
     async listDirectory(path: string, pagination?: Range): Promise<Result<Entity[]>> {
-        return this.accessor.listDirectory(this.getResource(path), pagination)
+        return await this.accessor.listDirectory(this.getResource(path), pagination)
     }
 
     async statResource(path: string): Promise<Result<Entity>> {
-        return this.accessor.statResource(this.getResource(path))
+        return await this.accessor.statResource(this.getResource(path))
     }
 
     async fetchBucketInfo(): Promise<Result<Bucket>> {
-        return this.accessor.fetchBucketInfo(this.getResource(''))
+        return await this.accessor.fetchBucketInfo(this.getResource(''))
     }
 }
