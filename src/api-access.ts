@@ -82,7 +82,10 @@ export class MeowithApiAccessor {
             await this.axiosInstance.post(`/api/file/upload/oneshot/${resource.appId}/${resource.bucketId}/${resource.path}`, data, {
                 headers: {
                     "Content-Length": size
-                }
+                },
+                maxBodyLength: Infinity,
+                maxContentLength: Infinity,
+                maxRedirects: 0, // prevent buffering of the stream into memory
             })
             return [undefined, undefined]
         } catch (e) {
@@ -113,7 +116,11 @@ export class MeowithApiAccessor {
      */
     async putFile(bucketId: BucketId, session: UploadSessionInfo, data: any): Promise<Result<undefined>> {
         try {
-            await this.axiosInstance.put(`/api/file/upload/put/${bucketId.appId}/${bucketId.bucketId}/${session.code}`, data)
+            await this.axiosInstance.put(`/api/file/upload/put/${bucketId.appId}/${bucketId.bucketId}/${session.code}`, data, {
+                maxBodyLength: Infinity,
+                maxContentLength: Infinity,
+                maxRedirects: 0, // prevent buffering of the stream into memory
+            })
             return [undefined, undefined]
         } catch (e) {
             return handleError(e)
@@ -166,7 +173,7 @@ export class MeowithApiAccessor {
     async deleteDirectory(resource: Resource, recursive: boolean): Promise<Result<undefined>> {
         try {
             await this.axiosInstance.delete(`/api/directory/delete/${resource.appId}/${resource.bucketId}/${resource.path}`, {
-                data: {recursive}
+                data: { recursive }
             })
             return [undefined, undefined]
         } catch (e) {
