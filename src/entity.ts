@@ -70,7 +70,7 @@ export type UploadSessionInfo = {
     /**
      * Upload code
      */
-    code: String,
+    code: string,
     /**
      * Session validity in seconds
      */
