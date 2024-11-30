@@ -101,7 +101,7 @@ export class MeowithApiAccessor {
      */
     async startUploadSession(resource: Resource, size: number): Promise<Result<UploadSessionInfo>> {
         try {
-            let result = await this.axiosInstance.post(`/api/file/upload/oneshot/${resource.appId}/${resource.bucketId}/${resource.path}`, { size })
+            let result = await this.axiosInstance.post(`/api/file/upload/durable/${resource.appId}/${resource.bucketId}/${resource.path}`, { size })
             return [result.data as UploadSessionInfo, undefined]
         } catch (e) {
             return handleError(e)
