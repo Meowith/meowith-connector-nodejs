@@ -81,4 +81,6 @@ export type UploadSessionInfo = {
     uploaded: number,
 }
 
-export type UploadSessionResumeResponse = Omit<Omit<UploadSessionInfo, 'validity'>, 'code'>
+export type UploadSessionResumeResponse = {
+    uploaded_size: number
+}
