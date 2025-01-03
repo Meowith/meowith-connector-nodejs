@@ -55,7 +55,8 @@ export class MeowithApiAccessor {
         try {
             let headers = {};
             if (range) headers['Range'] = this.constructRangeHeader(range)
-            let response = await this.axiosInstance.get(`/api/file/download/${resource.appId}/${resource.bucketId}/${resource.path}`, { responseType: "stream", headers })
+            let response = await this.axiosInstance.get(`/api/file/download/${resource.appId}/${resource.bucketId}/${encodeURIComponent(resource.path)}`,
+                { responseType: "stream", headers })
             return [
                 {
                     size: parseInt(response.headers["x-file-content-length"] as string),
@@ -79,7 +80,7 @@ export class MeowithApiAccessor {
      */
     async uploadFile(resource: Resource, data: any, size: number): Promise<Result<undefined>> {
         try {
-            await this.axiosInstance.post(`/api/file/upload/oneshot/${resource.appId}/${resource.bucketId}/${resource.path}`, data, {
+            await this.axiosInstance.post(`/api/file/upload/oneshot/${resource.appId}/${resource.bucketId}/${encodeURIComponent(resource.path)}`, data, {
                 headers: {
                     "Content-Length": size
                 },
@@ -101,7 +102,7 @@ export class MeowithApiAccessor {
      */
     async startUploadSession(resource: Resource, size: number): Promise<Result<UploadSessionInfo>> {
         try {
-            let result = await this.axiosInstance.post(`/api/file/upload/durable/${resource.appId}/${resource.bucketId}/${resource.path}`, { size })
+            let result = await this.axiosInstance.post(`/api/file/upload/durable/${resource.appId}/${resource.bucketId}/${encodeURIComponent(resource.path)}`, { size })
             return [result.data as UploadSessionInfo, undefined]
         } catch (e) {
             return handleError(e)
@@ -145,7 +146,7 @@ export class MeowithApiAccessor {
 
     async renameFile(resource: Resource, to: string): Promise<Result<undefined>> {
         try {
-            await this.axiosInstance.post(`/api/file/rename/${resource.appId}/${resource.bucketId}/${resource.path}`, { to } as RenameEntityRequest)
+            await this.axiosInstance.post(`/api/file/rename/${resource.appId}/${resource.bucketId}/${encodeURIComponent(resource.path)}`, { to } as RenameEntityRequest)
             return [undefined, undefined]
         } catch (e) {
             return handleError(e)
@@ -154,7 +155,7 @@ export class MeowithApiAccessor {
 
     async renameDirectory(resource: Resource, to: string): Promise<Result<undefined>> {
         try {
-            await this.axiosInstance.post(`/api/directory/rename/${resource.appId}/${resource.bucketId}/${resource.path}`, { to } as RenameEntityRequest)
+            await this.axiosInstance.post(`/api/directory/rename/${resource.appId}/${resource.bucketId}/${encodeURIComponent(resource.path)}`, { to } as RenameEntityRequest)
             return [undefined, undefined]
         } catch (e) {
             return handleError(e)
@@ -163,7 +164,7 @@ export class MeowithApiAccessor {
 
     async deleteFile(resource: Resource): Promise<Result<undefined>> {
         try {
-            await this.axiosInstance.delete(`/api/file/delete/${resource.appId}/${resource.bucketId}/${resource.path}`)
+            await this.axiosInstance.delete(`/api/file/delete/${resource.appId}/${resource.bucketId}/${encodeURIComponent(resource.path)}`)
             return [undefined, undefined]
         } catch (e) {
             return handleError(e)
@@ -172,7 +173,7 @@ export class MeowithApiAccessor {
 
     async deleteDirectory(resource: Resource, recursive: boolean): Promise<Result<undefined>> {
         try {
-            await this.axiosInstance.delete(`/api/directory/delete/${resource.appId}/${resource.bucketId}/${resource.path}`, {
+            await this.axiosInstance.delete(`/api/directory/delete/${resource.appId}/${resource.bucketId}/${encodeURIComponent(resource.path)}`, {
                 data: { recursive }
             })
             return [undefined, undefined]
@@ -183,7 +184,7 @@ export class MeowithApiAccessor {
 
     async createDirectory(resource: Resource): Promise<Result<undefined>> {
         try {
-            await this.axiosInstance.post(`/api/directory/create/${resource.appId}/${resource.bucketId}/${resource.path}`)
+            await this.axiosInstance.post(`/api/directory/create/${resource.appId}/${resource.bucketId}/${encodeURIComponent(resource.path)}`)
             return [undefined, undefined]
         } catch (e) {
             return handleError(e)
@@ -216,7 +217,7 @@ export class MeowithApiAccessor {
 
     async listDirectory(resource: Resource, paginate?: Range): Promise<Result<Entity[]>> {
         try {
-            let response = await this.axiosInstance.get(`/api/directory/list/${resource.appId}/${resource.bucketId}/${resource.path}${this.constructPaginationQuery(paginate)}`)
+            let response = await this.axiosInstance.get(`/api/directory/list/${resource.appId}/${resource.bucketId}/${encodeURIComponent(resource.path)}${this.constructPaginationQuery(paginate)}`)
             let entities = response.data as RawEntityList;
             return [entities.entities.map(x => {
                 return { ...x, last_modified: new Date(x.last_modified), created: new Date(x.created) } as Entity
@@ -232,7 +233,7 @@ export class MeowithApiAccessor {
      */
     async statResource(resource: Resource): Promise<Result<Entity>> {
         try {
-            let response = await this.axiosInstance.get(`/api/bucket/stat/${resource.appId}/${resource.bucketId}/${resource.path}`)
+            let response = await this.axiosInstance.get(`/api/bucket/stat/${resource.appId}/${resource.bucketId}/${encodeURIComponent(resource.path)}`)
             let entity = response.data as RawEntity;
             return [{ ...entity, last_modified: new Date(entity.last_modified), created: new Date(entity.created) } as Entity, undefined]
         } catch (e) {
